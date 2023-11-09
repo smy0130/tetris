@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.4.1.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        body{
+            margin: 0;
+            text-align: center;
+        }
+        canvas{
+            margin-top: 100px;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <canvas style="display: inline-block; border:3px solid black" id='tatris' width="200px" height="400px"></canvas>
+        <div style="display:inline-block; text-align: left; margin-left: 20px;">
+            <button id='start'>게임시작</button>
+            <p>****************************</p>
+            <h4 id='pointLabel'>score : 0</h4>
+            <p>조작키</p>
+            <p>****************************</p>
+            <p>keyUp : 회전</p>
+            <p>keyLeft : 왼쪽으로 한칸</p>
+            <p>keyRight : 오른쪽으로 한칸</p>
+            <p>spacebar : 블럭 맨 밑으로</p>
+            <p>****************************</p>
+        </div>
+    </div>
+    <script>
+        var canvas = document.getElementById('tatris'); // 캔버스 노드
+        var ctx = canvas.getContext('2d');
+
+        var shapes = [
+                [0x4640, 0x0E40, 0x4C40, 0x4E00], // 'T' 
+                [0x8C40, 0x6C00, 0x8C40, 0x6C00], // 'S' 
+                [0x4C80, 0xC600, 0x4C80, 0xC600], // 'Z' 
+                [0x4444, 0x0F00, 0x4444, 0x0F00], // 'I' 
+                [0x44C0, 0x8E00, 0xC880, 0xE200], // 'J' 
+                [0x88C0, 0xE800, 0xC440, 0x2E00], // 'L' 
+                [0xCC00, 0xCC00, 0xCC00, 0xCC00] // 'O' 
+            ]; 
+        
+        var colorList = ['#ff000d','#2600ff','#5eff00','#fff200','#ff00bf','#ff0095','#00ffff'];
+
+        var curShapeType = Math.floor(Math.random() * 7);//현재 테트리스 모양을 담을 변수
+        var curRotation = 0; // 현재 테트리스 회전 모양을 담을 변수 ( 0 , 1 , 2 , 3 )
+        var curShape = shapes[curShapeType][curRotation]; // 위에 두변수로 가져온 현재 모양 정보
+        var sPos = {x:3,y:0}; // 현재 도형의 x 와 y 좌표
+        var gamePanel = [];
+        var gamePanelColor = [];
+        for(var z = 0; z<20;z++){
+            gamePanel[z] = [];
+            gamePanelColor[z] = [];
+            for(var x = 0;x<10;x++){
+                gamePanel[z][x]=0;
+                gamePanelColor[z][x] = 'white';
+            }
+        }
+
+        function gamePanelSave(x,y){
+            for (var i = 0; i < 4; i++) {
+                for (var j = 0; j < 4; j++) {
+                    if (curShape & (0x8000 >> (i * 4 + j))) { 
+                        this.gamePanel[this.sPos.y+i][this.sPos.x+j]=1;
+                        this.gamePanelColor[this.sPos.y+i][this.sPos.x+j] =  colorList[curShapeType];
+                    }
+                } 
+            }
+        }
+
+        function gamePanelDraw(){
+            //배경은 ( 채워지지 않은부분은 흰색 )
+            ctx.fillStyle = 'white';
+
+            // 채워지는 부분은 검은색으로
+            ctx.fillRect(0,0,200,400);
+            ctx.fillStyle = 'black'; 
+
+            // 테두리색상 블루로
+            // ctx.rect(0,0,200,400);
+            // ctx.strokeStyle="blue"; 
+            // ctx.stroke();
+
+            // curShape에 맞춰서 검은색으로 칠한다.
+            for (var y = 0; y < gamePanel.length; y++) {
+                for (var x = 0; x < gamePanel[y].length; x++) {
+                    if(gamePanel[y][x]){
+                        ctx.fillStyle = gamePanelColor[y][x]; 
+                        ctx.fillRect(x*20,y*20,19,19);
+                    }
+                } 
+            }
+        }
+
+        function draw(){
+            // 확정된 부분은 먼저 블럭은 채우고 시작해야하고
+            gamePanelDraw();
+
+            // curShape에 맞춰서 검은색으로 칠한다.
+            for (var y = 0; y < 4; y++) {
+                for (var x = 0; x < 4; x++) {
+                    if (curShape & (0x8000 >> (y * 4 + x))) { 
+                        ctx.fillStyle = this.colorList[this.curShapeType];
+                        ctx.fillRect((sPos.x+x) * 20, (sPos.y+y) * 20, 19, 19); 
+                    }
+                } 
+            }
+        }
+
+        function gamefinish(){
+            clearInterval(intervalHandler);
+            location.reload();
+            alert(setpoint + "점 입니다.");
+        }
+
+        // 새로운 도형을 뽑는 함수
+        function newShape(){
+            if(gamePanel[0][3]==1 || gamePanel[0][4]==1|| gamePanel[0][5]==1 ||gamePanel[0][6]==1){
+                gamefinish();
+            }
+            var shapeNum = Math.floor(Math.random() * 7);
+            this.sPos.x = 3;
+            this.sPos.y = 0;
+            this.curShapeType = shapeNum;
+            this.curShape = shapes[curShapeType][curRotation];
+            draw();
+        }
+
+        function changeAng(){
+            if(this.curRotation==3){
+                this.curRotation=0;
+            }else{
+                this.curRotation+=1;
+            }
+            this.curShape = shapes[curShapeType][curRotation];
+            draw();
+        }
+
+        $(document).keydown(function (event) {
+            switch(event.keyCode){
+            case 37:
+                if(!rowLeftCheck()){
+                    sPos.x -=1;
+                }else{
+                    
+                }
+                draw();
+                break;
+            case 39:
+                if(!rowRightCheck()){
+                    sPos.x +=1;
+                }else{
+
+                }
+                draw();
+                break;
+            case 38:
+                if(!checkAng(shapes[curShapeType][curRotation+1])){
+                    changeAng();
+                }else{
+
+                }
+            case 32:
+            break;
+            default:
+                break;
+            }
+        });
+
+        function rowLeftCheck(){
+            for(var i = 0; i< 4;i++){
+                for(var j = 0;j<4;j++){
+                    if(curShape&(0x8000>>(i*4+j))){
+                        if(this.sPos.x+j-1==-1 || gamePanel[this.sPos.y+i][this.sPos.x+j-1]){
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function rowRightCheck(){
+            for(var i = 0; i< 4;i++){
+                for(var j = 0;j<4;j++){
+                    if(curShape&(0x8000>>(i*4+j))){
+                        if(this.sPos.x+j+1==10 || gamePanel[this.sPos.y+i][this.sPos.x+j+1]){
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function checkBlock(x,y){
+            for (var i = 0; i < 4; i++){
+                for (var j = 0; j < 4; j++){
+                    if (curShape & (0x8000 >> (i * 4 + j))){
+                        if (y + i >= 19 || gamePanel[y + i + 1][x + j]){
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function checkAng(shapes2){
+            for (var i = 0; i < 4; i++){
+                for (var j = 0; j < 4; j++){
+                    if (shapes2 & (0x8000 >> (i * 4 + j))){
+                        if(gamePanel[this.sPos.y+i][this.sPos.x+j]){
+                            return true;
+                        }
+                    }
+                }
+            }
+            return false;
+        }
+
+        function checkLastRow(){
+            var xList = [];
+            for (var y = gamePanel.length-1; y >=0; y--) {
+                var ck = 0;
+                for (var x = gamePanel[y].length-1; x >=0; x--) {
+                    ck+=gamePanel[y][x];
+                }
+                if(ck == 10){
+                    xList.push(y);
+                }
+            }
+            dropBlock(xList);
+            return 1;
+        }
+
+        function dropBlock(xList){
+            var pointCnt=0;
+            for(var i = 0; i<xList.length;i++){
+                for(var j = 0;j<10;j++){
+                    gamePanel[xList[i]][j] = gamePanel[xList[i]-1][j];
+                    gamePanelColor[xList[i]][j] = gamePanelColor[xList[i]-1][j];
+                    gamePanel[xList[i]-1][j]=0;
+                    gamePanelColor[xList[i]-1][j] = 'white';
+                    for(var k = xList[i]-1; k>0;k--){
+                        gamePanel[k][j] =gamePanel[k-1][j];
+                        gamePanelColor[k][j] = gamePanelColor[k-1][j];
+                    }
+                }
+                pointCnt+=1;
+            }
+            setPoint(pointCnt*10);
+        }
+        var setpoint = 0;
+        function setPoint(point){
+            setpoint += point;
+            $('#pointLabel').html('score : '+ setpoint);
+        }
+        var intervalHandler;
+        $().ready(function () {
+                $('#start').click(function () {
+                    intervalHandler = setInterval(function () {
+                        if (!checkBlock(this.sPos.x, this.sPos.y)) {
+                            this.sPos.y += 1;
+                            draw();
+                        } else {
+                            gamePanelSave(); //저장되고
+                            if(checkLastRow()){ // 저장된거에서
+                                newShape();
+                            }
+                        }
+                    }, 200);
+                });
+            });
+
+    </script>
+
+</body>
+</html>
